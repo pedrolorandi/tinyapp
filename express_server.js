@@ -15,6 +15,19 @@ function generateRandomString() {
   return string;  
 }
 
+function getUserByEmail(newUserEmail, usersDB) {
+  const usersKey = Object.keys(usersDB);
+  let userExists = false;
+
+  usersKey.forEach((user) => {
+    if (users[user].email === newUserEmail) {
+      userExists = true;
+    }
+  })
+
+  return userExists;
+}
+
 let users = {
   userRandomID: {
     id: "userRandomID",
@@ -110,7 +123,7 @@ app.post('/login', (req, res) => {
 });
 
 app.post('/logout', (req, res) => {
-  res.clearCookie('username');
+  res.clearCookie('user_id');
   res.redirect('/urls');
 });
 
@@ -126,13 +139,17 @@ app.get('/register', (req, res) => {
 })
 
 app.post('/register', (req, res) => {
-  const id = generateRandomString();
   const email = req.body.email;
   const password = req.body.password;
-  users[id] = { id, email, password };
-  console.log(users)
-  res.cookie('user_id', id)
-  res.redirect('/urls');
+
+  if ((!email || !password) || getUserByEmail(email, users)) {
+    res.sendStatus(400);
+  } else {
+    const id = generateRandomString();
+    users[id] = { id, email, password };
+    res.cookie('user_id', id)
+    res.redirect('/urls');
+  }
 })
 
 app.listen(PORT, () => {
