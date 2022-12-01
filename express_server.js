@@ -1,10 +1,13 @@
 const { render } = require('ejs');
 const express = require('express');
 const cookieParser = require('cookie-parser');
+const e = require('express');
 const app = express();
 const PORT = 8080;
 
-function generateRandomString() {
+// helper functions
+
+const generateRandomString = () => {
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let string = '';
   
@@ -15,18 +18,21 @@ function generateRandomString() {
   return string;  
 }
 
-function getUserByEmail(newUserEmail, usersDB) {
-  const usersKey = Object.keys(usersDB);
-  let userExists = false;
+const getUserByEmail = (email, database) => {
+  const keys = Object.keys(database);
 
-  usersKey.forEach((user) => {
-    if (users[user].email === newUserEmail) {
-      userExists = true;
-    }
-  })
+  for (let key of keys) {
+    if (database[key].email === email) return database[key]
+  }
 
-  return userExists;
+  return undefined;
 }
+
+const verifyUser = (user, password) => {
+  return user.password === password ? true : false;
+}
+
+// 'databases'
 
 let users = {
   userRandomID: {
@@ -116,6 +122,7 @@ app.get('/u/:id', (req, res) => {
   res.redirect(longURL);
 })
 
+// LOGIN
 app.get('/login', (req, res) => {
   const userId = req.cookies['user_id'];
   const user = users[userId];
@@ -123,21 +130,35 @@ app.get('/login', (req, res) => {
   const templateVars = { 
     user: user  
   };
-  
+
   res.render('urls_login', templateVars)
 })
 
+
+// validates users credentials
 app.post('/login', (req, res) => {
-  const username = req.body.username;
-  res.cookie('username', username)
-  res.redirect('/urls');
+  const email = req.body.email;
+  const password = req.body.password;
+
+  // verifies if the email the user typed exits in the database, if not return undefined
+  user = getUserByEmail(email, users)
+
+  // if there's an user and the user's password in the database is the same as the one they type, create a cookie and redirect the user 
+  if (user && verifyUser(user, password)) {
+    res.cookie('user_id', user.id)
+    res.redirect('/urls');
+  } else {
+    res.sendStatus(403);
+  }
 });
 
+// LOGOUT
 app.post('/logout', (req, res) => {
   res.clearCookie('user_id');
-  res.redirect('/urls');
+  res.redirect('/login');
 });
 
+// REGISTER
 app.get('/register', (req, res) => {
   const userId = req.cookies['user_id'];
   const user = users[userId];
@@ -153,7 +174,9 @@ app.post('/register', (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
 
-  if ((!email || !password) || getUserByEmail(email, users)) {
+  user = (getUserByEmail(email, users))
+
+  if (user || (!email || !password)) {
     res.sendStatus(400);
   } else {
     const id = generateRandomString();
@@ -162,6 +185,8 @@ app.post('/register', (req, res) => {
     res.redirect('/urls');
   }
 })
+
+// server listen
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
