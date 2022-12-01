@@ -143,7 +143,11 @@ app.get('/login', (req, res) => {
     user: user  
   };
 
-  res.render('urls_login', templateVars)
+  if (user) {
+    res.redirect('/urls');
+  } else {
+    res.render('urls_login', templateVars)
+  }  
 })
 
 
@@ -181,12 +185,15 @@ app.get('/register', (req, res) => {
   const user = users[userId];
 
   const templateVars = { 
-    urls: urlDatabase,
     user: user  
   };
-  res.render('urls_register', templateVars)
-})
 
+  if (user) {
+    res.redirect('/urls');
+  } else {
+    res.render('urls_register', templateVars)
+  }  
+});
 
 // register new user
 app.post('/register', (req, res) => {
