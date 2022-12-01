@@ -141,7 +141,12 @@ app.post('/urls/:id', (req, res) => {
 // redirect to long URL
 app.get('/u/:id', (req, res) => {
   const longURL = urlDatabase[req.params.id];
-  res.redirect(longURL);
+
+  if (longURL) {
+    res.redirect(longURL);
+  } else {
+    res.status(404).send('The URL you tried to reach does not exist.');
+  }
 })
 
 // display login template
