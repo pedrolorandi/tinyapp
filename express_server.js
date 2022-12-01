@@ -6,7 +6,7 @@ const app = express();
 const PORT = 8080;
 
 // helper functions
-
+// generate a string with 6 random characters
 const generateRandomString = () => {
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let string = '';
@@ -18,6 +18,8 @@ const generateRandomString = () => {
   return string;  
 }
 
+// receive an email and verify if there's an user registered with it
+// if positive, return the user object, else return undefined
 const getUserByEmail = (email, database) => {
   const keys = Object.keys(database);
 
@@ -28,12 +30,13 @@ const getUserByEmail = (email, database) => {
   return undefined;
 }
 
+// receive a user object and a password and verify if it matches
+// if positive, return true, else return false
 const verifyUser = (user, password) => {
   return user.password === password ? true : false;
 }
 
 // 'databases'
-
 let users = {
   userRandomID: {
     id: "userRandomID",
@@ -56,10 +59,13 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.set('view engine', 'ejs');
 
+// root
+// TODO: define initial route
 app.get('/', (req, res) => {
   res.send('Hello!');
 });
 
+// display all urls
 app.get('/urls', (req, res) => {
   const userId = req.cookies['user_id'];
   const user = users[userId];
@@ -72,6 +78,7 @@ app.get('/urls', (req, res) => {
   res.render('urls_index', templateVars)
 });
 
+// generate a new tiny url based to the long url
 app.post("/urls", (req, res) => {
   const longURL = req.body.longURL;
   const key = generateRandomString();
@@ -79,6 +86,7 @@ app.post("/urls", (req, res) => {
   res.redirect(`/urls/${key}`);
 });
 
+// display the new url template
 app.get('/urls/new', (req, res) => {
   const userId = req.cookies['user_id'];
   const user = users[userId];
@@ -91,12 +99,14 @@ app.get('/urls/new', (req, res) => {
   res.render('urls_new', templateVars)
 })
 
+// delete a specific url
 app.post('/urls/:id/delete', (req, res) => {
   const key = req.params.id;
   delete urlDatabase[key];
   res.redirect('/urls');
 })
 
+// display a page for a specific url
 app.get('/urls/:id', (req, res) => {
   const userId = req.cookies['user_id'];
   const user = users[userId];
@@ -110,6 +120,7 @@ app.get('/urls/:id', (req, res) => {
   res.render(`urls_show`, templateVars);
 })
 
+// edit a specific url
 app.post('/urls/:id', (req, res) => {
   const key = req.params.id;
   const newURL = req.body.updateURL;
@@ -117,12 +128,13 @@ app.post('/urls/:id', (req, res) => {
   res.redirect('/urls');
 })
 
+// redirect to long URL
 app.get('/u/:id', (req, res) => {
   const longURL = urlDatabase[req.params.id];
   res.redirect(longURL);
 })
 
-// LOGIN
+// display login template
 app.get('/login', (req, res) => {
   const userId = req.cookies['user_id'];
   const user = users[userId];
@@ -135,12 +147,12 @@ app.get('/login', (req, res) => {
 })
 
 
-// validates users credentials
+// validate users credentials
 app.post('/login', (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
 
-  // verifies if the email the user typed exits in the database, if not return undefined
+  // verify if the email the user typed exits in the database, if not return undefined
   user = getUserByEmail(email, users)
 
   // if there's an user and the user's password in the database is the same as the one they type, create a cookie and redirect the user 
@@ -152,13 +164,13 @@ app.post('/login', (req, res) => {
   }
 });
 
-// LOGOUT
+// clear cookie and logs out
 app.post('/logout', (req, res) => {
   res.clearCookie('user_id');
   res.redirect('/login');
 });
 
-// REGISTER
+// display register
 app.get('/register', (req, res) => {
   const userId = req.cookies['user_id'];
   const user = users[userId];
@@ -170,12 +182,16 @@ app.get('/register', (req, res) => {
   res.render('urls_register', templateVars)
 })
 
+
+// register new user
 app.post('/register', (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
 
+  // verify if the email the user typed exits in the database, if not return undefined
   user = (getUserByEmail(email, users))
 
+  // if the user exits, or there's no email or password, return bad request error, else register new user
   if (user || (!email || !password)) {
     res.sendStatus(400);
   } else {
@@ -187,7 +203,6 @@ app.post('/register', (req, res) => {
 })
 
 // server listen
-
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
