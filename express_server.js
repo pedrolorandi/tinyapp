@@ -80,10 +80,17 @@ app.get('/urls', (req, res) => {
 
 // generate a new tiny url based to the long url
 app.post("/urls", (req, res) => {
-  const longURL = req.body.longURL;
-  const key = generateRandomString();
-  urlDatabase[key] = longURL;
-  res.redirect(`/urls/${key}`);
+  const userId = req.cookies['user_id'];
+  const user = users[userId];
+
+  if (user) {
+    const longURL = req.body.longURL;
+    const key = generateRandomString();
+    urlDatabase[key] = longURL;
+    res.redirect(`/urls/${key}`);
+  } else {
+    res.status(403).send('You have to be logged in to shorten URLs.');
+  }
 });
 
 // display the new url template
@@ -92,11 +99,14 @@ app.get('/urls/new', (req, res) => {
   const user = users[userId];
 
   const templateVars = { 
-    urls: urlDatabase,
     user: user  
   };
 
-  res.render('urls_new', templateVars)
+  if (user) {
+    res.render('urls_new', templateVars);
+  } else {
+    res.redirect('/login');
+  }  
 })
 
 // delete a specific url
