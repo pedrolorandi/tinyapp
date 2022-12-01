@@ -152,15 +152,20 @@ app.post('/login', (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
 
+  // verify if the email and password field are empty
+  if ((!email || !password)) {
+    res.status(400).send("Email and password are required.")
+  }
+
   // verify if the email the user typed exits in the database, if not return undefined
-  user = getUserByEmail(email, users)
+  const user = getUserByEmail(email, users)
 
   // if there's an user and the user's password in the database is the same as the one they type, create a cookie and redirect the user 
   if (user && verifyUser(user, password)) {
-    res.cookie('user_id', user.id)
+    res.cookie('user_id', user.id);
     res.redirect('/urls');
   } else {
-    res.sendStatus(403);
+    res.status(403).send("Your password is incorrect or this account doesn't exist.");
   }
 });
 
@@ -188,12 +193,17 @@ app.post('/register', (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
 
+  // verify if the email and password field are empty
+  if ((!email || !password)) {
+    res.status(400).send("Email and password are required.");
+  }
+
   // verify if the email the user typed exits in the database, if not return undefined
-  user = (getUserByEmail(email, users))
+  const user = (getUserByEmail(email, users))
 
   // if the user exits, or there's no email or password, return bad request error, else register new user
-  if (user || (!email || !password)) {
-    res.sendStatus(400);
+  if (user) {
+    res.status(400).send("User already exists.");
   } else {
     const id = generateRandomString();
     users[id] = { id, email, password };
