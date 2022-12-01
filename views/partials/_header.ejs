@@ -19,23 +19,17 @@
       </div>
     </div>
     <% if (user) { %>
-      <form class="form-inline" action="/logout" method="POST">
-        <div class="form-group">
-          <span>Logged in as: <%= user.email %></span>
-          <button type="submit" class="btn btn-outline-dark ml-2">Logout</button>
-        </div>
-      </form>
+    <form class="form-inline" action="/logout" method="POST">
+      <div class="form-group">
+        <span class="font-weight-bold">Logged in As: <%= user.email %>!</span>
+        <button type="submit" class="btn btn-outline-dark ml-2">Logout</button>
+      </div>
+    </form>
     <% } else { %>
-      <form class="form-inline" action="/register" method="GET">
-        <div class="form-group">
-          <button type="submit" class="btn btn-outline-dark ml-2">Register</button>
-        </div>
-      </form>
-      <form class="form-inline" action="/login" method="GET">
-        <div class="form-group">
-          <button type="submit" class="btn btn-outline-dark ml-2">Login</button>
-        </div>
-      </form>
+    <div class="navbar-nav">
+      <a class="nav-item nav-link" href="/login">Login</a>
+      <a class="nav-item nav-link" href="/register">Register</a>
+    </div>
     <% } %>
   </nav>
 </header>
