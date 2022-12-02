@@ -30,10 +30,15 @@ const getUserByEmail = (email, database) => {
   return undefined;
 }
 
-// receive a user object and a password and verify if it matches
-// if positive, return true, else return false
-const verifyUser = (user, password) => {
-  return user.password === password ? true : false;
+// receive an URL ID ande check if it exists
+const verifyID = (urlID) => {
+  const keys = Object.keys(urlDatabase);
+
+  for (let key of keys) {
+    if (key === urlID) return true;
+  }
+
+  return false;
 }
 
 // receive an user id and filter the URL database with user's URLS
@@ -90,9 +95,9 @@ app.get('/', (req, res) => {
 
 // display all urls
 app.get('/urls', (req, res) => {  
-  const userId = req.cookies['user_id'];
-  const user = users[userId];
-  const urls = urlsForUser(userId)
+  const userID = req.cookies['user_id'];
+  const user = users[userID];
+  const urls = urlsForUser(userID)
   const templateVars = { urls, user };
 
   res.render('urls_index', templateVars)
@@ -100,8 +105,8 @@ app.get('/urls', (req, res) => {
 
 // generate a new tiny url based to the long url
 app.post("/urls", (req, res) => {
-  const userId = req.cookies['user_id'];
-  const user = users[userId];
+  const userID = req.cookies['user_id'];
+  const user = users[userID];
 
   if (user) {
     const longURL = req.body.longURL;
@@ -115,8 +120,8 @@ app.post("/urls", (req, res) => {
 
 // display the new url template
 app.get('/urls/new', (req, res) => {
-  const userId = req.cookies['user_id'];
-  const user = users[userId];
+  const userID = req.cookies['user_id'];
+  const user = users[userID];
 
   const templateVars = { 
     user: user  
@@ -138,17 +143,17 @@ app.post('/urls/:id/delete', (req, res) => {
 
 // display a page for a specific url
 app.get('/urls/:id', (req, res) => {
-  const userId = req.cookies['user_id'];
-  const user = users[userId];
+  const userID = req.cookies['user_id'];
+  const user = users[userID];
   const pageId = req.params.id;
-  const urls = urlsForUser(userId)
+  const urls = urlsForUser(userID)
   const templateVars = { urls, user, pageId };
 
   // TODO: The individual URL pages should not be accesible if the URL does not belong to them.
 
   if (!user) {
     res.status(403).send('You should be logged in to see this page.');
-  } else if (urlDatabase[pageId].userID !== userId) {
+  } else if (urlDatabase[pageId].userID !== userID) {
     res.status(403).send('You can only see your URLs.') 
   } else {
     res.render(`urls_show`, templateVars);
@@ -157,15 +162,26 @@ app.get('/urls/:id', (req, res) => {
 
 // edit a specific url
 app.post('/urls/:id', (req, res) => {
-  const key = req.params.id;
+  const userID = req.cookies['user_id'];
+  const user = users[userID];
+  const pageID = req.params.id;
   const newURL = req.body.updateURL;
-  urlDatabase[key] = newURL;  
-  res.redirect('/urls');
-})
+
+  if (!verifyID(pageID)) {
+    res.status(404).send('The URL you tried to reach does not exist.\n');
+  } else if (!user) {
+    res.status(403).send('You should be logged in to see this page.\n');
+  } else if (urlDatabase[pageID].userID !== userID){
+    res.status(403).send('You can only edit your URLs.') 
+  } else {
+    urlDatabase[pageID].longURL = newURL;  
+    res.redirect('/urls');
+  }
+});
 
 // redirect to long URL
 app.get('/u/:id', (req, res) => {
-  const longURL = urlDatabase[req.params.id];
+  const longURL = urlDatabase[req.params.id].longURL;
 
   if (longURL) {
     res.redirect(longURL);
@@ -176,8 +192,8 @@ app.get('/u/:id', (req, res) => {
 
 // display login template
 app.get('/login', (req, res) => {
-  const userId = req.cookies['user_id'];
-  const user = users[userId];
+  const userID = req.cookies['user_id'];
+  const user = users[userID];
 
   const templateVars = { 
     user: user  
@@ -204,7 +220,7 @@ app.post('/login', (req, res) => {
   const user = getUserByEmail(email, users)
 
   // if there's an user and the user's password in the database is the same as the one they type, create a cookie and redirect the user 
-  if (user && verifyUser(user, password)) {
+  if (user && (user.password === password)) {
     res.cookie('user_id', user.id);
     res.redirect('/urls');
   } else {
@@ -220,8 +236,8 @@ app.post('/logout', (req, res) => {
 
 // display register
 app.get('/register', (req, res) => {
-  const userId = req.cookies['user_id'];
-  const user = users[userId];
+  const userID = req.cookies['user_id'];
+  const user = users[userID];
 
   const templateVars = { 
     user: user  
