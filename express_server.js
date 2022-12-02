@@ -36,6 +36,18 @@ const verifyUser = (user, password) => {
   return user.password === password ? true : false;
 }
 
+// receive an user id and filter the URL database with user's URLS
+const urlsForUser = (id) => {
+  const urls = {};
+  const keys = Object.keys(urlDatabase);
+  
+  for (let key of keys) {
+    if (urlDatabase[key].userID === id) urls[key] = urlDatabase[key]
+  }
+
+  return urls;
+};
+
 // 'databases'
 let users = {
   userRandomID: {
@@ -48,12 +60,23 @@ let users = {
     email: "user2@example.com",
     password: "dishwasher-funk",
   },
+  e91vn9: {
+    id: "e91vn9",
+    email: "pedrokl@hotmail.com",
+    password: "123456" 
+  }
 };
 
 let urlDatabase = {
-  'b2xVn2': 'http://www.lighthouselabs.ca',
-  '9sm5xK': 'http://www.google.com'
-}
+  b2xVn2: {
+    longURL: 'http://www.lighthouselabs.ca',
+    userID: 'e91vn9',
+  },
+  '9sm5xK': {
+    longURL: 'http://www.google.ca',
+    userID: 'userRandomID', 
+  },
+};
 
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -66,14 +89,11 @@ app.get('/', (req, res) => {
 });
 
 // display all urls
-app.get('/urls', (req, res) => {
+app.get('/urls', (req, res) => {  
   const userId = req.cookies['user_id'];
   const user = users[userId];
-
-  const templateVars = { 
-    urls: urlDatabase,
-    user: user  
-  };
+  const urls = urlsForUser(userId)
+  const templateVars = { urls, user };
 
   res.render('urls_index', templateVars)
 });
@@ -120,14 +140,19 @@ app.post('/urls/:id/delete', (req, res) => {
 app.get('/urls/:id', (req, res) => {
   const userId = req.cookies['user_id'];
   const user = users[userId];
+  const pageId = req.params.id;
+  const urls = urlsForUser(userId)
+  const templateVars = { urls, user, pageId };
 
-  const templateVars = { 
-    id: req.params.id, 
-    longURL: urlDatabase[req.params.id],
-    user: user  
-  };
+  // TODO: The individual URL pages should not be accesible if the URL does not belong to them.
 
-  res.render(`urls_show`, templateVars);
+  if (!user) {
+    res.status(403).send('You should be logged in to see this page.');
+  } else if (urlDatabase[pageId].userID !== userId) {
+    res.status(403).send('You can only see your URLs.') 
+  } else {
+    res.render(`urls_show`, templateVars);
+  }  
 })
 
 // edit a specific url
@@ -164,7 +189,6 @@ app.get('/login', (req, res) => {
     res.render('urls_login', templateVars)
   }  
 })
-
 
 // validate users credentials
 app.post('/login', (req, res) => {
