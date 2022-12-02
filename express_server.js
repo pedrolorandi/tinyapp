@@ -45,9 +45,15 @@ app.use(cookieSession({
 app.set('view engine', 'ejs');
 
 // root
-// TODO: define initial route
 app.get('/', (req, res) => {
-  res.send('Hello!');
+  const userID = req.session.userID;
+  const user = users[userID];
+
+  if (user) {
+    res.redirect('/urls');
+  } else {
+    res.redirect('/login');
+  }
 });
 
 // display all urls
