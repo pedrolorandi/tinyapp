@@ -1,6 +1,7 @@
 const { render } = require('ejs');
 const express = require('express');
 const cookieParser = require('cookie-parser');
+const bcrypt = require("bcryptjs");
 const app = express();
 const PORT = 8080;
 
@@ -19,11 +20,10 @@ const generateRandomString = () => {
 
 // receive an email and verify if there's an user registered with it
 // if positive, return the user object, else return undefined
-const getUserByEmail = (email, database) => {
-  const keys = Object.keys(database);
-
+const getUserByEmail = (email) => {
+  const keys = Object.keys(users);
   for (let key of keys) {
-    if (database[key].email === email) return database[key]
+    if (users[key].email === email) return users[key]
   }
 
   return undefined;
@@ -67,7 +67,7 @@ let users = {
   e91vn9: {
     id: "e91vn9",
     email: "pedrokl@hotmail.com",
-    password: "123456" 
+    password: "$2a$10$vQtba4/w/vN4LAwlRWwqtum/7wDWVKpliusxHnurLyMi5vNwuF/yq" 
   }
 };
 
@@ -160,8 +160,6 @@ app.get('/urls/:id', (req, res) => {
   const urls = urlsForUser(userID)
   const templateVars = { urls, user, pageId };
 
-  // TODO: The individual URL pages should not be accesible if the URL does not belong to them.
-
   if (!user) {
     res.status(403).send('You should be logged in to see this page.');
   } else if (urlDatabase[pageId].userID !== userID) {
@@ -206,14 +204,10 @@ app.get('/login', (req, res) => {
   const userID = req.cookies['user_id'];
   const user = users[userID];
 
-  const templateVars = { 
-    user: user  
-  };
-
   if (user) {
     res.redirect('/urls');
   } else {
-    res.render('urls_login', templateVars)
+    res.render('urls_login', { user })
   }  
 })
 
@@ -221,17 +215,13 @@ app.get('/login', (req, res) => {
 app.post('/login', (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
+  const user = getUserByEmail(email)
+  let passwordMatch;
+  if (user) passwordMatch = bcrypt.compareSync(password, user.password);
 
-  // verify if the email and password field are empty
   if ((!email || !password)) {
     res.status(400).send("Email and password are required.")
-  }
-
-  // verify if the email the user typed exits in the database, if not return undefined
-  const user = getUserByEmail(email, users)
-
-  // if there's an user and the user's password in the database is the same as the one they type, create a cookie and redirect the user 
-  if (user && (user.password === password)) {
+  } else if (user && passwordMatch) {
     res.cookie('user_id', user.id);
     res.redirect('/urls');
   } else {
@@ -250,14 +240,10 @@ app.get('/register', (req, res) => {
   const userID = req.cookies['user_id'];
   const user = users[userID];
 
-  const templateVars = { 
-    user: user  
-  };
-
   if (user) {
     res.redirect('/urls');
   } else {
-    res.render('urls_register', templateVars)
+    res.render('urls_register', { user })
   }  
 });
 
@@ -265,21 +251,16 @@ app.get('/register', (req, res) => {
 app.post('/register', (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
+  const hashedPassword = bcrypt.hashSync(password, 10);
+  const user = (getUserByEmail(email))
 
-  // verify if the email and password field are empty
   if ((!email || !password)) {
     res.status(400).send("Email and password are required.");
-  }
-
-  // verify if the email the user typed exits in the database, if not return undefined
-  const user = (getUserByEmail(email, users))
-
-  // if the user exits, or there's no email or password, return bad request error, else register new user
-  if (user) {
+  } else if (user) {
     res.status(400).send("User already exists.");
   } else {
     const id = generateRandomString();
-    users[id] = { id, email, password };
+    users[id] = { id, email, password: hashedPassword };
     res.cookie('user_id', id)
     res.redirect('/urls');
   }
