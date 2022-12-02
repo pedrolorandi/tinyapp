@@ -136,9 +136,21 @@ app.get('/urls/new', (req, res) => {
 
 // delete a specific url
 app.post('/urls/:id/delete', (req, res) => {
-  const key = req.params.id;
-  delete urlDatabase[key];
-  res.redirect('/urls');
+  const userID = req.cookies['user_id'];
+  const user = users[userID];
+  const pageID = req.params.id;
+  const newURL = req.body.updateURL;
+
+  if (!verifyID(pageID)) {
+    res.status(404).send('The URL you tried to reach does not exist.\n');
+  } else if (!user) {
+    res.status(403).send('You should be logged in to see this page.\n');
+  } else if (urlDatabase[pageID].userID !== userID){
+    res.status(403).send('You can only edit your URLs.') 
+  } else {
+    delete urlDatabase[pageID];
+    res.redirect('/urls');
+  }
 })
 
 // display a page for a specific url
