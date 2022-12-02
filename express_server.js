@@ -1,7 +1,6 @@
 const { render } = require('ejs');
 const express = require('express');
 const cookieParser = require('cookie-parser');
-const e = require('express');
 const app = express();
 const PORT = 8080;
 
@@ -111,7 +110,7 @@ app.post("/urls", (req, res) => {
   if (user) {
     const longURL = req.body.longURL;
     const key = generateRandomString();
-    urlDatabase[key] = longURL;
+    urlDatabase[key] = { longURL, userID };
     res.redirect(`/urls/${key}`);
   } else {
     res.status(403).send('You have to be logged in to shorten URLs.');
